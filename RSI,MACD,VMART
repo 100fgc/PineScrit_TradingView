@@ -1,0 +1,43 @@
+//@version=4
+study("Hammer, RSI & MACD Strategy", overlay=true)
+
+// Detect Hammer Candle
+bodySize = abs(open - close)
+upperShadow = high - max(open, close)
+lowerShadow = min(open, close) - low
+hammerCondition = bodySize < 0.4 * (high - low) and upperShadow < 0.2 * (high - low) and lowerShadow > 2 * bodySize
+
+// Calculate RSI
+rsiLength = input(title="RSI Length", type=input.integer, defval=14)
+rsi = rsi(close, rsiLength)
+
+// Calculate MACD
+fastLength = input(title="Fast Length", type=input.integer, defval=12)
+slowLength = input(title="Slow Length", type=input.integer, defval=26)
+signalLength = input(title="Signal Length", type=input.integer, defval=9)
+[macdLine, signalLine, _] = macd(close, fastLength, slowLength, signalLength)
+
+// Check for entry signals
+rsiOverbought = input(title="RSI Overbought Level", type=input.float, defval=70)
+rsiOversold = input(title="RSI Oversold Level", type=input.float, defval=30)
+
+rsiCross = crossunder(rsi, rsiOversold)
+rsiCrossOver = crossover(rsi, rsiOverbought)
+
+macdCross = crossover(macdLine, signalLine)
+macdCrossUnder = crossunder(macdLine, signalLine)
+
+longCondition = ((rsiCross or macdCross) and hammerCondition)
+shortCondition = (rsiCrossOver or macdCrossUnder)
+
+// Plot Hammer Candle
+plotshape(hammerCondition, title="Hammer", style=shape.labelup, location=location.belowbar, color=color.green)
+
+// Plot RSI and MACD
+plot(rsi, color=color.green)
+plot(macdLine, color=color.blue)
+plot(signalLine, color=color.red)
+
+// Mark entry signals
+plotshape(longCondition, title="Buy", style=shape.triangleup, location=location.belowbar, color=color.green, size=size.small)
+plotshape(shortCondition, title="Sell", style=shape.triangledown, location=location.abovebar, color=color.red, size=size.small)
